@@ -3,7 +3,7 @@
 ### プロジェクトの説明
 
 この Bot は、アニメの API からランダムな作品を設定した間隔で取得し、Discord チャンネルに自動的に投稿する Discord Bot です。
-
+- 招待リンク https://discord.com/oauth2/authorize?client_id=1314916746469179423&permissions=2147568640&integration_type=0&scope=bot+applications.commands
 ---
 
 ## セットアップ方法
