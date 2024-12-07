@@ -19,6 +19,13 @@ client.once("ready", () => {
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
+  if (!interaction.member.permissions.has("Administrator")) {
+    await interaction.reply({
+      content: "このコマンドは管理者のみが使用できます。",
+      ephemeral: true,
+    });
+    return;
+  }
   if (interaction.commandName === "setchannel") {
     const channelID = interaction.channel.id;
 
