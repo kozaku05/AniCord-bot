@@ -68,51 +68,55 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 async function sendData() {
-  let TID = Math.floor(Math.random() * 7302) + 1;
-  console.log("生成されたTID:", TID);
-  const data = await get(TID);
-  console.log("取得したデータ:", data);
-  const json = await fs.promises.readFile("channelDB.json", "utf8");
-  const channels = JSON.parse(json);
-  if (channels.length === 0) {
-    console.log("送信先チャンネルが登録されていません");
-    return;
-  }
+  try {
+    let TID = Math.floor(Math.random() * 7302) + 1;
+    console.log("生成されたTID:", TID);
+    const data = await get(TID);
+    console.log("取得したデータ:", data);
+    const json = await fs.promises.readFile("channelDB.json", "utf8");
+    const channels = JSON.parse(json);
+    if (channels.length === 0) {
+      console.log("送信先チャンネルが登録されていません");
+      return;
+    }
 
-  const embedMessage = {
-    embeds: [
-      {
-        title: "**今回取得したアニメ**",
-        description: "ランダムに取得されたアニメの情報です！",
-        url: "https://cal.syoboi.jp/tid/" + data.id,
-        color: 0x3498db,
-        footer: {
-          text: "使用API: https://cal.syoboi.jp",
+    const embedMessage = {
+      embeds: [
+        {
+          title: "**今回取得したアニメ**",
+          description: "ランダムに取得されたアニメの情報です！",
+          url: "https://cal.syoboi.jp/tid/" + data.id,
+          color: 0x3498db,
+          footer: {
+            text: "使用API: https://cal.syoboi.jp",
+          },
+          fields: [
+            {
+              name: "**タイトル**",
+              value: data.title,
+              inline: true,
+            },
+            {
+              name: "**ID**",
+              value: data.id,
+              inline: true,
+            },
+            {
+              name: "ツール制作者",
+              value:
+                "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
+              inline: false,
+            },
+          ],
         },
-        fields: [
-          {
-            name: "**タイトル**",
-            value: data.title,
-            inline: true,
-          },
-          {
-            name: "**ID**",
-            value: data.id,
-            inline: true,
-          },
-          {
-            name: "ツール制作者",
-            value:
-              "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
-            inline: false,
-          },
-        ],
-      },
-    ],
-  };
-  for (const channelId of channels) {
-    const channel = await client.channels.fetch(channelId);
-    await channel.send(embedMessage);
+      ],
+    };
+    for (const channelId of channels) {
+      const channel = await client.channels.fetch(channelId);
+      await channel.send(embedMessage);
+    }
+  } catch (error) {
+    console.error("エラーが発生しました:", error);
   }
 }
 client.login(token);
