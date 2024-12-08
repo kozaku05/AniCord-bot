@@ -1,9 +1,9 @@
-import { Client, GatewayIntentBits, Message } from "discord.js";
-import dotenv from "dotenv";
-import fs from "fs";
+const { Client, GatewayIntentBits } = require("discord.js");
+const dotenv = require("dotenv");
+const fs = require("fs");
+const get = require("./api-get");
+const schedule = require("node-schedule");
 dotenv.config();
-const token = process.env.TOKEN;
-import get from "./api-get.js";
 
 const client = new Client({
   intents: [
@@ -13,121 +13,97 @@ const client = new Client({
   ],
 });
 
-client.once("ready", () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+client.on("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
 });
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
   if (!interaction.member.permissions.has("Administrator")) {
-    await interaction.reply({
-      content: "このコマンドは管理者のみが使用できます。",
-      ephemeral: true,
-    });
-    return;
+    return interaction.reply("You do not have permission to use this command.");
   }
   if (interaction.commandName === "setchannel") {
     const channelID = interaction.channel.id;
-
+    let jsonData = [];
     try {
-      const data = await fs.promises.readFile("channelDB.json", "utf8");
-      let jsonData = data ? JSON.parse(data) : [];
-
-      if (jsonData.includes(channelID)) {
-        await interaction.reply({
-          content: `すでに設定されているチャンネルです。`,
-        });
-        return;
+      const data = fs.readFileSync("channelDB.json", "utf8");
+      if (data) {
+        jsonData = JSON.parse(data);
       }
-
-      jsonData.push(`${channelID}`);
-      await fs.promises.writeFile("channelDB.json", JSON.stringify(jsonData));
-
-      await interaction.reply({
-        content: `送信先のチャンネルを ${interaction.channel.name} に設定しました。一時間おきに送信されます。`,
-      });
-    } catch (err) {
-      console.error(err);
-      await interaction.reply({
-        content: `エラーが発生しました。`,
-        ephemeral: true,
-      });
+    } catch (error) {
+      jsonData = [];
     }
+    if (jsonData.includes(channelID)) {
+      return interaction.reply("すでに設定されているチャンネルです。");
+    }
+    jsonData.push(channelID);
+    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+
+    interaction.reply(
+      "チャンネルを設定しました。一時間おきにランダムなアニメの情報をお届けします！"
+    );
   }
   if (interaction.commandName === "deletechannel") {
     const channelID = interaction.channel.id;
-    try {
-      const data = await fs.promises.readFile("channelDB.json", "utf8");
-      let jsonData = data ? JSON.parse(data) : [];
-      jsonData = jsonData.filter((id) => id !== channelID);
-      await fs.promises.writeFile("channelDB.json", JSON.stringify(jsonData));
-      await interaction.reply({
-        content: `送信先のチャンネルを削除しました。`,
-      });
-    } catch (err) {
-      console.error(err);
-      await interaction.reply({
-        content: `エラーが発生しました。`,
-        ephemeral: true,
-      });
+    const data = fs.readFileSync("channelDB.json", "utf8");
+    let jsonData = JSON.parse(data);
+    if (!jsonData.includes(channelID)) {
+      return interaction.reply("設定されていないチャンネルです。");
     }
+    jsonData = jsonData.filter((id) => id !== channelID);
+    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+    interaction.reply("チャンネルを除外しました。");
   }
 });
 
-async function sendData() {
-  try {
-    let TID = Math.floor(Math.random() * 7302) + 1;
-    console.log("生成されたTID:", TID);
-    const data = await get(TID);
-    console.log("取得したデータ:", data);
-    const json = await fs.promises.readFile("channelDB.json", "utf8");
-    const channels = JSON.parse(json);
-    if (channels.length === 0) {
-      console.log("送信先チャンネルが登録されていません");
-      return;
-    }
-
-    const embedMessage = {
-      embeds: [
-        {
-          title: "**今回取得したアニメ**",
-          description: "ランダムに取得されたアニメの情報です！",
-          url: "https://cal.syoboi.jp/tid/" + data.id,
-          color: 0x3498db,
-          footer: {
-            text: "使用API: https://cal.syoboi.jp",
-          },
-          fields: [
-            {
-              name: "**タイトル**",
-              value: data.title,
-              inline: true,
-            },
-            {
-              name: "**ID**",
-              value: data.id,
-              inline: true,
-            },
-            {
-              name: "ツール制作者",
-              value:
-                "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
-              inline: false,
-            },
-          ],
+async function send() {
+  const TID = Math.floor(Math.random() * 7302) + 1;
+  const data = await get(TID);
+  const embedMessage = {
+    embeds: [
+      {
+        title: "**今回取得したアニメ**",
+        description: "ランダムに取得されたアニメの情報です！",
+        url: "https://cal.syoboi.jp/tid/" + data.id,
+        color: 0x3498db,
+        footer: {
+          text: "使用API: https://cal.syoboi.jp",
         },
-      ],
-    };
+        fields: [
+          {
+            name: "**タイトル**",
+            value: data.title,
+            inline: true,
+          },
+          {
+            name: "**ID**",
+            value: data.id,
+            inline: true,
+          },
+          {
+            name: "ツール制作者",
+            value:
+              "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
+            inline: false,
+          },
+        ],
+      },
+    ],
+  };
+  try {
+    let channels = fs.readFileSync("channelDB.json", "utf8");
+    channels = JSON.parse(channels);
     for (const channelId of channels) {
       const channel = await client.channels.fetch(channelId);
       await channel.send(embedMessage);
     }
   } catch (error) {
-    console.error("エラーが発生しました:", error);
+    console.log("チャンネル取得エラー");
   }
 }
-client.login(token);
-setInterval(async () => {
-  await sendData();
-}, 60 * 60 * 1000);
-setTimeout(sendData, 5000);
+
+client.login(process.env.TOKEN).then(() => {
+  send();
+});
+
+schedule.scheduleJob("0 * * * *", send);
