@@ -104,11 +104,16 @@ async function send() {
 
 client.login(process.env.TOKEN).then(async () => {
   //ボットの起動時に送信
-  let channels = fs.readFileSync("channelDB.json", "utf8");
-  channels = JSON.parse(channels);
-  for (const channelId of channels) {
-    const channel = await client.channels.fetch(channelId);
-    channel.send("Botが起動しました！情報を一つ送信します...");
+  try {
+    let channels = fs.readFileSync("channelDB.json", "utf8");
+    channels = JSON.parse(channels);
+    for (const channelId of channels) {
+      const channel = await client.channels.fetch(channelId);
+      channel.send("Botが起動しました！情報を一つ送信します...");
+    }
+  } catch (error) {
+    console.log("チャンネル取得エラー");
+    return;
   }
   await send();
 });
