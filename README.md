@@ -26,7 +26,7 @@ AniCord は、一時間ごとに自動でアニメ情報を投稿する Discord 
 1. リポジトリをクローン
 
 ```bash
-git clone https://github.com/yourusername/anicord-bot.git
+git clone https://github.com/kozaku05/anicord-bot.git
 cd anicord-bot
 ```
 
