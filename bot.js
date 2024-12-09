@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, ActivityType } = require("discord.js");
 const dotenv = require("dotenv");
 const fs = require("fs");
 const get = require("./api-get");
@@ -15,6 +15,35 @@ const client = new Client({
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
+  let Index = 0;
+  setInterval(async () => {
+    let title = "";
+    if (Index === 2) {
+      let tid = Math.floor(Math.random() * 7302) + 1;
+      let data = await get(tid);
+      title = data.title;
+    }
+    const activities = [
+      {
+        name: `${client.guilds.cache.size}サーバーで稼働中`,
+        type: ActivityType.Watching,
+      },
+      {
+        name: "公式鯖:discord.gg/tfyqW3CNZh",
+        type: ActivityType.Playing,
+      },
+      {
+        name: title,
+        type: ActivityType.Watching,
+      },
+    ];
+
+    client.user.setPresence({
+      activities: [activities[Index]],
+      status: "online",
+    });
+    Index = (Index + 1) % activities.length;
+  }, 10000);
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -98,6 +127,7 @@ client.on("interactionCreate", async (interaction) => {
 async function send() {
   const TID = Math.floor(Math.random() * 7302) + 1;
   const data = await get(TID);
+  console.log(data);
   const embedMessage = {
     embeds: [
       {
@@ -142,7 +172,6 @@ async function send() {
 }
 
 client.login(process.env.TOKEN).then(async () => {
-  //ボットの起動時に送信
   try {
     let channels = fs.readFileSync("channelDB.json", "utf8");
     channels = JSON.parse(channels);
