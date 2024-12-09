@@ -54,6 +54,45 @@ client.on("interactionCreate", async (interaction) => {
     fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
     interaction.reply("チャンネルを除外しました。");
   }
+  if (interaction.commandName === "get") {
+    let TID = interaction.options.getInteger("tid");
+    if (!TID) {
+      TID = Math.floor(Math.random() * 7302) + 1;
+    }
+    const data = await get(TID);
+    const embedMessage = {
+      embeds: [
+        {
+          title: "**今回取得したアニメ**",
+          description: "ランダムに取得されたアニメの情報です！",
+          url: "https://cal.syoboi.jp/tid/" + data.id,
+          color: 0x3498db,
+          footer: {
+            text: "使用API: https://cal.syoboi.jp",
+          },
+          fields: [
+            {
+              name: "**タイトル**",
+              value: data.title,
+              inline: true,
+            },
+            {
+              name: "**ID**",
+              value: data.id,
+              inline: true,
+            },
+            {
+              name: "ツール制作者",
+              value:
+                "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
+              inline: false,
+            },
+          ],
+        },
+      ],
+    };
+    interaction.reply(embedMessage);
+  }
 });
 
 async function send() {
