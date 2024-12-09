@@ -48,41 +48,6 @@ client.on("ready", () => {
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
-  if (!interaction.member.permissions.has("Administrator")) {
-    return interaction.reply("You do not have permission to use this command.");
-  }
-  if (interaction.commandName === "setchannel") {
-    const channelID = interaction.channel.id;
-    let jsonData = [];
-    try {
-      const data = fs.readFileSync("channelDB.json", "utf8");
-      if (data) {
-        jsonData = JSON.parse(data);
-      }
-    } catch (error) {
-      jsonData = [];
-    }
-    if (jsonData.includes(channelID)) {
-      return interaction.reply("すでに設定されているチャンネルです。");
-    }
-    jsonData.push(channelID);
-    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
-
-    interaction.reply(
-      "チャンネルを設定しました。一時間おきにランダムなアニメの情報をお届けします！"
-    );
-  }
-  if (interaction.commandName === "deletechannel") {
-    const channelID = interaction.channel.id;
-    const data = fs.readFileSync("channelDB.json", "utf8");
-    let jsonData = JSON.parse(data);
-    if (!jsonData.includes(channelID)) {
-      return interaction.reply("設定されていないチャンネルです。");
-    }
-    jsonData = jsonData.filter((id) => id !== channelID);
-    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
-    interaction.reply("チャンネルを除外しました。");
-  }
   if (interaction.commandName === "get") {
     let TID = interaction.options.getInteger("tid");
     if (!TID) {
@@ -121,6 +86,57 @@ client.on("interactionCreate", async (interaction) => {
       ],
     };
     interaction.reply(embedMessage);
+  }
+  if (interaction.commandName === "announce") {
+    if (interaction.user.id !== process.env.OWNER_ID) {
+      return interaction.reply({
+        content: "開発者以外実行できません",
+        ephemeral: true,
+      });
+    }
+    let channels = fs.readFileSync("channelDB.json", "utf8");
+    channels = JSON.parse(channels);
+    for (const channelId of channels) {
+      let message = interaction.options.getString("message");
+      const channel = await client.channels.fetch(channelId);
+      await channel.send(message);
+    }
+    interaction.reply({ content: "メッセージを送信しました", ephemeral: true });
+  }
+  if (!interaction.member.permissions.has("Administrator")) {
+    return interaction.reply("管理者以外実行できません");
+  }
+  if (interaction.commandName === "setchannel") {
+    const channelID = interaction.channel.id;
+    let jsonData = [];
+    try {
+      const data = fs.readFileSync("channelDB.json", "utf8");
+      if (data) {
+        jsonData = JSON.parse(data);
+      }
+    } catch (error) {
+      jsonData = [];
+    }
+    if (jsonData.includes(channelID)) {
+      return interaction.reply("すでに設定されているチャンネルです。");
+    }
+    jsonData.push(channelID);
+    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+
+    interaction.reply(
+      "チャンネルを設定しました。一時間おきにランダムなアニメの情報をお届けします！"
+    );
+  }
+  if (interaction.commandName === "deletechannel") {
+    const channelID = interaction.channel.id;
+    const data = fs.readFileSync("channelDB.json", "utf8");
+    let jsonData = JSON.parse(data);
+    if (!jsonData.includes(channelID)) {
+      return interaction.reply("設定されていないチャンネルです。");
+    }
+    jsonData = jsonData.filter((id) => id !== channelID);
+    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+    interaction.reply("チャンネルを除外しました。");
   }
 });
 
