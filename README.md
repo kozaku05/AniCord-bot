@@ -63,7 +63,7 @@ OWNER_ID=開発者のDiscord ID
 4. Bot の起動
 
 ```bash
-node bot2.js
+node bot.js
 ```
 
 ## 技術仕様
