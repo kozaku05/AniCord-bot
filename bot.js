@@ -13,6 +13,41 @@ const client = new Client({
   ],
 });
 
+function createEmbed(title, id) {
+  const embedMessage = {
+    embeds: [
+      {
+        title: "**今回取得したアニメ**",
+        description: "ランダムに取得されたアニメの情報です！",
+        url: "https://cal.syoboi.jp/tid/" + id,
+        color: 0x3498db,
+        footer: {
+          text: "使用API: https://cal.syoboi.jp",
+        },
+        fields: [
+          {
+            name: "**タイトル**",
+            value: title,
+            inline: true,
+          },
+          {
+            name: "**ID**",
+            value: id,
+            inline: true,
+          },
+          {
+            name: "ツール制作者",
+            value:
+              "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
+            inline: false,
+          },
+        ],
+      },
+    ],
+  };
+  return embedMessage;
+}
+
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
   let Index = 0;
@@ -49,43 +84,17 @@ client.on("ready", () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
   if (interaction.commandName === "get") {
-    let TID = interaction.options.getInteger("tid");
-    if (!TID) {
-      TID = Math.floor(Math.random() * 7302) + 1;
+    try {
+      let TID = interaction.options.getInteger("tid");
+      if (!TID) {
+        TID = Math.floor(Math.random() * 7302) + 1;
+      }
+      const data = await get(TID);
+      const embedMessage = createEmbed(data.title, data.id);
+      await interaction.reply(embedMessage);
+    } catch (error) {
+      await interaction.reply("指定されたTIDが見つかりませんでした");
     }
-    const data = await get(TID);
-    const embedMessage = {
-      embeds: [
-        {
-          title: "**今回取得したアニメ**",
-          description: "ランダムに取得されたアニメの情報です！",
-          url: "https://cal.syoboi.jp/tid/" + data.id,
-          color: 0x3498db,
-          footer: {
-            text: "使用API: https://cal.syoboi.jp",
-          },
-          fields: [
-            {
-              name: "**タイトル**",
-              value: data.title,
-              inline: true,
-            },
-            {
-              name: "**ID**",
-              value: data.id,
-              inline: true,
-            },
-            {
-              name: "ツール制作者",
-              value:
-                "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
-              inline: false,
-            },
-          ],
-        },
-      ],
-    };
-    interaction.reply(embedMessage);
   }
   if (interaction.commandName === "announce") {
     if (interaction.user.id !== process.env.OWNER_ID) {
@@ -103,10 +112,10 @@ client.on("interactionCreate", async (interaction) => {
     }
     interaction.reply({ content: "メッセージを送信しました", ephemeral: true });
   }
-  if (!interaction.member.permissions.has("Administrator")) {
-    return interaction.reply("管理者以外実行できません");
-  }
   if (interaction.commandName === "setchannel") {
+    if (!interaction.member.permissions.has("Administrator")) {
+      return interaction.reply("管理者以外実行できません");
+    }
     const channelID = interaction.channel.id;
     let jsonData = [];
     try {
@@ -122,12 +131,14 @@ client.on("interactionCreate", async (interaction) => {
     }
     jsonData.push(channelID);
     fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
-
     interaction.reply(
       "チャンネルを設定しました。一時間おきにランダムなアニメの情報をお届けします！"
     );
   }
   if (interaction.commandName === "deletechannel") {
+    if (!interaction.member.permissions.has("Administrator")) {
+      return interaction.reply("管理者以外実行できません");
+    }
     const channelID = interaction.channel.id;
     const data = fs.readFileSync("channelDB.json", "utf8");
     let jsonData = JSON.parse(data);
@@ -144,37 +155,7 @@ async function send() {
   const TID = Math.floor(Math.random() * 7302) + 1;
   const data = await get(TID);
   console.log(data);
-  const embedMessage = {
-    embeds: [
-      {
-        title: "**今回取得したアニメ**",
-        description: "ランダムに取得されたアニメの情報です！",
-        url: "https://cal.syoboi.jp/tid/" + data.id,
-        color: 0x3498db,
-        footer: {
-          text: "使用API: https://cal.syoboi.jp",
-        },
-        fields: [
-          {
-            name: "**タイトル**",
-            value: data.title,
-            inline: true,
-          },
-          {
-            name: "**ID**",
-            value: data.id,
-            inline: true,
-          },
-          {
-            name: "ツール制作者",
-            value:
-              "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
-            inline: false,
-          },
-        ],
-      },
-    ],
-  };
+  const embedMessage = createEmbed(data.title, data.id);
   try {
     let channels = fs.readFileSync("channelDB.json", "utf8");
     channels = JSON.parse(channels);
@@ -199,7 +180,7 @@ client.login(process.env.TOKEN).then(async () => {
     console.log("チャンネル取得エラー");
     return;
   }
-  await send();
+  send();
 });
 
 schedule.scheduleJob("0 * * * *", send);
