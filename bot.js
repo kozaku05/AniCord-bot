@@ -14,6 +14,9 @@ const client = new Client({
 });
 
 function createEmbed(title, id) {
+  if (!title || !id) {
+    return;
+  }
   const embedMessage = {
     embeds: [
       {
@@ -56,7 +59,11 @@ client.on("ready", () => {
     if (Index === 2) {
       let tid = Math.floor(Math.random() * 7302) + 1;
       let data = await get(tid);
-      title = data.title;
+      if (data.error) {
+        title = "取得に失敗しました";
+      } else {
+        title = data.title;
+      }
     }
     const activities = [
       {
@@ -91,9 +98,12 @@ client.on("interactionCreate", async (interaction) => {
       }
       const data = await get(TID);
       const embedMessage = createEmbed(data.title, data.id);
+      if (!embedMessage) {
+        return interaction.reply("指定したTIDが見つかりませんでした");
+      }
       await interaction.reply(embedMessage);
     } catch (error) {
-      await interaction.reply("指定されたTIDが見つかりませんでした");
+      await interaction.reply("エラーが発生しました");
     }
   }
   if (interaction.commandName === "announce") {
@@ -106,9 +116,13 @@ client.on("interactionCreate", async (interaction) => {
     let channels = fs.readFileSync("channelDB.json", "utf8");
     channels = JSON.parse(channels);
     for (const channelId of channels) {
-      let message = interaction.options.getString("message");
-      const channel = await client.channels.fetch(channelId);
-      await channel.send(message);
+      try {
+        let message = interaction.options.getString("message");
+        const channel = await client.channels.fetch(channelId);
+        await channel.send(message);
+      } catch (error) {
+        console.log("チャンネル取得エラー");
+      }
     }
     interaction.reply({ content: "メッセージを送信しました", ephemeral: true });
   }
@@ -116,7 +130,12 @@ client.on("interactionCreate", async (interaction) => {
     if (!interaction.member.permissions.has("Administrator")) {
       return interaction.reply("管理者以外実行できません");
     }
-    const channelID = interaction.channel.id;
+    let channelID = "";
+    try {
+      channelID = interaction.channel.id;
+    } catch (error) {
+      return interaction.reply("チャンネル取得に失敗しました");
+    }
     let jsonData = [];
     try {
       const data = fs.readFileSync("channelDB.json", "utf8");
@@ -139,7 +158,12 @@ client.on("interactionCreate", async (interaction) => {
     if (!interaction.member.permissions.has("Administrator")) {
       return interaction.reply("管理者以外実行できません");
     }
-    const channelID = interaction.channel.id;
+    let channelID = "";
+    try {
+      channelID = interaction.channel.id;
+    } catch (error) {
+      return interaction.reply("チャンネル取得に失敗しました");
+    }
     const data = fs.readFileSync("channelDB.json", "utf8");
     let jsonData = JSON.parse(data);
     if (!jsonData.includes(channelID)) {
@@ -155,16 +179,22 @@ async function send() {
   const TID = Math.floor(Math.random() * 7302) + 1;
   const data = await get(TID);
   console.log(data);
+  if (data.error) {
+    return;
+  }
   const embedMessage = createEmbed(data.title, data.id);
-  try {
-    let channels = fs.readFileSync("channelDB.json", "utf8");
-    channels = JSON.parse(channels);
-    for (const channelId of channels) {
+  if (!embedMessage) {
+    return;
+  }
+  let channels = fs.readFileSync("channelDB.json", "utf8");
+  channels = JSON.parse(channels);
+  for (const channelId of channels) {
+    try {
       const channel = await client.channels.fetch(channelId);
       await channel.send(embedMessage);
+    } catch (error) {
+      console.log("チャンネル取得エラー");
     }
-  } catch (error) {
-    console.log("チャンネル取得エラー");
   }
 }
 
@@ -178,7 +208,6 @@ client.login(process.env.TOKEN).then(async () => {
     }
   } catch (error) {
     console.log("チャンネル取得エラー");
-    return;
   }
   send();
 });

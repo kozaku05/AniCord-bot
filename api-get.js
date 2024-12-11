@@ -21,15 +21,3 @@ async function get(TID) {
   }
 }
 module.exports = get;
-/*
-テスト用コード
-(async () => {
-  let TID = ;
-  let result = await get(TID);
-  if (result.error) {
-    console.log(result.error);
-    return;
-  }
-  console.log(result);
-})();
-*/
