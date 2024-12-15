@@ -102,9 +102,18 @@ client.on("interactionCreate", async (interaction) => {
         return interaction.reply("指定したTIDが見つかりませんでした");
       }
       await interaction.reply(embedMessage);
+      return;
     } catch (error) {
       await interaction.reply("エラーが発生しました");
+      return;
     }
+  }
+  if (!interaction.channel) {
+    await interaction.reply({
+      content: "ここでは実行できません。",
+      ephemeral: true,
+    });
+    return;
   }
   if (interaction.commandName === "announce") {
     if (interaction.user.id !== process.env.OWNER_ID) {
@@ -134,7 +143,8 @@ client.on("interactionCreate", async (interaction) => {
     try {
       channelID = interaction.channel.id;
     } catch (error) {
-      return interaction.reply("チャンネル取得に失敗しました");
+      interaction.reply("チャンネル取得に失敗しました");
+      return;
     }
     let jsonData = [];
     try {
@@ -143,7 +153,8 @@ client.on("interactionCreate", async (interaction) => {
         jsonData = JSON.parse(data);
       }
     } catch (error) {
-      jsonData = [];
+      interaction.reply("チャンネルDBの読み込みに失敗しました");
+      return;
     }
     if (jsonData.includes(channelID)) {
       return interaction.reply("すでに設定されているチャンネルです。");
@@ -165,6 +176,10 @@ client.on("interactionCreate", async (interaction) => {
       return interaction.reply("チャンネル取得に失敗しました");
     }
     const data = fs.readFileSync("channelDB.json", "utf8");
+    if (!data) {
+      interaction.reply("設定されていないチャンネルです。");
+      return;
+    }
     let jsonData = JSON.parse(data);
     if (!jsonData.includes(channelID)) {
       return interaction.reply("設定されていないチャンネルです。");
@@ -187,6 +202,7 @@ async function send() {
     return;
   }
   let channels = fs.readFileSync("channelDB.json", "utf8");
+  if (!channels) return;
   channels = JSON.parse(channels);
   for (const channelId of channels) {
     try {
