@@ -1,4 +1,9 @@
-const { Client, GatewayIntentBits, ActivityType } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  ActivityType,
+  EmbedBuilder,
+} = require("discord.js");
 const dotenv = require("dotenv");
 const fs = require("fs");
 const get = require("./api-get");
@@ -15,39 +20,28 @@ const client = new Client({
 
 function createEmbed(title, id) {
   if (!title || !id) {
-    return;
+    return null;
   }
-  const embedMessage = {
-    embeds: [
+
+  const embedMessage = new EmbedBuilder()
+    .setTitle("**今回取得したアニメ**")
+    .setDescription("ランダムに取得されたアニメの情報です！")
+    .setURL(`https://cal.syoboi.jp/tid/${id}`)
+    .setColor(0x3498db)
+    .setFooter({
+      text: "使用API: https://cal.syoboi.jp",
+      iconURL: client.user.displayAvatarURL(),
+    })
+    .addFields(
+      { name: "**タイトル**", value: title, inline: true },
+      { name: "**ID**", value: id, inline: true },
       {
-        title: "**今回取得したアニメ**",
-        description: "ランダムに取得されたアニメの情報です！",
-        url: "https://cal.syoboi.jp/tid/" + id,
-        color: 0x3498db,
-        footer: {
-          text: "使用API: https://cal.syoboi.jp",
-        },
-        fields: [
-          {
-            name: "**タイトル**",
-            value: title,
-            inline: true,
-          },
-          {
-            name: "**ID**",
-            value: id,
-            inline: true,
-          },
-          {
-            name: "ツール制作者",
-            value:
-              "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
-            inline: false,
-          },
-        ],
-      },
-    ],
-  };
+        name: "ツール制作者",
+        value: "[Github @kozaku05](https://github.com/kozaku05/AniCord-bot)",
+        inline: false,
+      }
+    );
+
   return embedMessage;
 }
 
@@ -93,20 +87,34 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "get") {
     try {
       let TID = interaction.options.getInteger("tid");
+      let ephemeral = interaction.options.getBoolean("ephemeral");
       if (!TID) {
         TID = Math.floor(Math.random() * 7302) + 1;
       }
       const data = await get(TID);
       if (data.error) {
-        return interaction.reply(`エラー : ${data.error}`);
+        return interaction.reply({
+          content: `エラー : ${data.error}`,
+          ephemeral: true,
+        });
       }
       const embedMessage = createEmbed(data.title, data.id);
       if (!embedMessage) {
-        return interaction.reply("指定したTIDが見つかりませんでした");
+        return interaction.reply({
+          content: "指定したTIDが見つかりませんでした : " + TID,
+          ephemeral: true,
+        });
       }
-      return await interaction.reply(embedMessage);
+      return await interaction.reply({
+        embeds: [embedMessage],
+        ephemeral: ephemeral,
+      });
     } catch (error) {
-      return await interaction.reply("エラーが発生しました");
+      console.log(error);
+      return await interaction.reply({
+        content: "エラーが発生しました",
+        ephemeral: true,
+      });
     }
   }
   if (!interaction.channel) {
@@ -218,15 +226,17 @@ async function send() {
   if (!embedMessage) {
     return;
   }
+  console.log(data);
   let channels = fs.readFileSync("channelDB.json", "utf8");
   if (!channels) return;
   channels = JSON.parse(channels);
   for (const channelId of channels) {
     try {
       const channel = await client.channels.fetch(channelId);
-      await channel.send(embedMessage);
+      await channel.send({ embeds: [embedMessage] });
     } catch (error) {
       console.log(`send:(${channelId})メッセージ送信に失敗しました`);
+      console.log(error);
     }
   }
 }

@@ -19,6 +19,12 @@ const commands = [
     description: "アニメの情報を取得します。",
     options: [
       {
+        name: "ephemeral",
+        description: "メッセージを自分だけに表示",
+        type: 5,
+        required: true,
+      },
+      {
         name: "tid",
         type: 4,
         required: false,
