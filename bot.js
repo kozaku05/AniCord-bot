@@ -110,7 +110,6 @@ client.on("interactionCreate", async (interaction) => {
         ephemeral: ephemeral,
       });
     } catch (error) {
-      console.log(error);
       return await interaction.reply({
         content: "エラーが発生しました",
         ephemeral: true,
@@ -236,7 +235,6 @@ async function send() {
       await channel.send({ embeds: [embedMessage] });
     } catch (error) {
       console.log(`send:(${channelId})メッセージ送信に失敗しました`);
-      console.log(error);
     }
   }
 }
