@@ -9,7 +9,7 @@ async function get(TID) {
     let result = await xml2js.parseStringPromise(xml);
     let Items = result?.TitleLookupResponse?.TitleItems?.[0]?.TitleItem?.[0];
     if (!Items) {
-      return { error: "Title not found" };
+      return { error: "タイトルが見つかりませんでした" };
     }
     let id = Items.$.id;
     let title = Items.Title[0];
@@ -17,7 +17,7 @@ async function get(TID) {
     return response;
   } catch (error) {
     console.log(error);
-    return { error: "Failed to fetch data" };
+    return { error: "通信エラー" };
   }
 }
 module.exports = get;

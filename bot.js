@@ -52,7 +52,7 @@ function createEmbed(title, id) {
 }
 
 client.on("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`ログイン : ${client.user.tag}`);
   let Index = 0;
   setInterval(async () => {
     let title = "";
@@ -97,15 +97,16 @@ client.on("interactionCreate", async (interaction) => {
         TID = Math.floor(Math.random() * 7302) + 1;
       }
       const data = await get(TID);
+      if (data.error) {
+        return interaction.reply(`エラー : ${data.error}`);
+      }
       const embedMessage = createEmbed(data.title, data.id);
       if (!embedMessage) {
         return interaction.reply("指定したTIDが見つかりませんでした");
       }
-      await interaction.reply(embedMessage);
-      return;
+      return await interaction.reply(embedMessage);
     } catch (error) {
-      await interaction.reply("エラーが発生しました");
-      return;
+      return await interaction.reply("エラーが発生しました");
     }
   }
   if (!interaction.channel) {
@@ -130,7 +131,9 @@ client.on("interactionCreate", async (interaction) => {
         const channel = await client.channels.fetch(channelId);
         await channel.send(message);
       } catch (error) {
-        console.log("チャンネル取得エラー");
+        console.log(
+          `command-announce:(${channelId})メッセージ送信に失敗しました`
+        );
       }
     }
     interaction.reply({ content: "メッセージを送信しました", ephemeral: true });
@@ -143,8 +146,7 @@ client.on("interactionCreate", async (interaction) => {
     try {
       channelID = interaction.channel.id;
     } catch (error) {
-      interaction.reply("チャンネル取得に失敗しました");
-      return;
+      return interaction.reply("チャンネル取得に失敗しました");
     }
     let jsonData = [];
     try {
@@ -160,7 +162,13 @@ client.on("interactionCreate", async (interaction) => {
       return interaction.reply("すでに設定されているチャンネルです。");
     }
     jsonData.push(channelID);
-    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+    try {
+      fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+    } catch (error) {
+      interaction.reply("チャンネルDBの書き込みに失敗しました");
+      console.log(`command-setchannel: 書き込み失敗${error}`);
+      return;
+    }
     interaction.reply(
       "チャンネルを設定しました。一時間おきにランダムなアニメの情報をお届けします！"
     );
@@ -175,17 +183,27 @@ client.on("interactionCreate", async (interaction) => {
     } catch (error) {
       return interaction.reply("チャンネル取得に失敗しました");
     }
-    const data = fs.readFileSync("channelDB.json", "utf8");
+    let data;
+    try {
+      data = fs.readFileSync("channelDB.json", "utf8");
+    } catch (error) {
+      return interaction.reply("チャンネルDBの読み込みに失敗しました");
+    }
     if (!data) {
-      interaction.reply("設定されていないチャンネルです。");
-      return;
+      return interaction.reply("設定されていないチャンネルです。");
     }
     let jsonData = JSON.parse(data);
     if (!jsonData.includes(channelID)) {
       return interaction.reply("設定されていないチャンネルです。");
     }
     jsonData = jsonData.filter((id) => id !== channelID);
-    fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+    try {
+      fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
+    } catch (error) {
+      interaction.reply("チャンネルDBの書き込みに失敗しました");
+      console.log(`command-setchannel: 書き込み失敗${error}`);
+      return;
+    }
     interaction.reply("チャンネルを除外しました。");
   }
 });
@@ -193,7 +211,6 @@ client.on("interactionCreate", async (interaction) => {
 async function send() {
   const TID = Math.floor(Math.random() * 7302) + 1;
   const data = await get(TID);
-  console.log(data);
   if (data.error) {
     return;
   }
@@ -209,21 +226,28 @@ async function send() {
       const channel = await client.channels.fetch(channelId);
       await channel.send(embedMessage);
     } catch (error) {
-      console.log("チャンネル取得エラー");
+      console.log(`send:(${channelId})メッセージ送信に失敗しました`);
     }
   }
 }
 
 client.login(process.env.TOKEN).then(async () => {
+  let channels;
   try {
-    let channels = fs.readFileSync("channelDB.json", "utf8");
-    channels = JSON.parse(channels);
-    for (const channelId of channels) {
+    channels = fs.readFileSync("channelDB.json", "utf8");
+  } catch (error) {
+    console.log("チャンネルDBの読み込みに失敗しました");
+    return;
+  }
+  if (!channels) return;
+  channels = JSON.parse(channels);
+  for (const channelId of channels) {
+    try {
       const channel = await client.channels.fetch(channelId);
       channel.send("Botが起動しました！情報を一つ送信します...");
+    } catch (error) {
+      console.log(`login:(${channelId})メッセージ送信に失敗しました`);
     }
-  } catch (error) {
-    console.log("チャンネル取得エラー");
   }
   send();
 });
