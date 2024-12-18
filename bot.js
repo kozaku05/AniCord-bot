@@ -147,13 +147,19 @@ client.on("interactionCreate", async (interaction) => {
   }
   if (interaction.commandName === "setchannel") {
     if (!interaction.member.permissions.has("Administrator")) {
-      return interaction.reply("管理者以外実行できません");
+      return interaction.reply({
+        content: "管理者以外実行できません",
+        ephemeral: true,
+      });
     }
     let channelID = "";
     try {
       channelID = interaction.channel.id;
     } catch (error) {
-      return interaction.reply("チャンネル取得に失敗しました");
+      return interaction.reply({
+        content: "チャンネル取得に失敗しました",
+        ephemeral: true,
+      });
     }
     let jsonData = [];
     try {
@@ -162,17 +168,26 @@ client.on("interactionCreate", async (interaction) => {
         jsonData = JSON.parse(data);
       }
     } catch (error) {
-      interaction.reply("チャンネルDBの読み込みに失敗しました");
+      interaction.reply({
+        content: "チャンネルDBの読み込みに失敗しました",
+        ephemeral: true,
+      });
       return;
     }
     if (jsonData.includes(channelID)) {
-      return interaction.reply("すでに設定されているチャンネルです。");
+      return interaction.reply({
+        content: "すでに設定されているチャンネルです。",
+        ephemeral: true,
+      });
     }
     jsonData.push(channelID);
     try {
       fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
     } catch (error) {
-      interaction.reply("チャンネルDBの書き込みに失敗しました");
+      interaction.reply({
+        content: "チャンネルDBの書き込みに失敗しました",
+        ephemeral: true,
+      });
       console.log(`command-setchannel: 書き込み失敗${error}`);
       return;
     }
@@ -188,26 +203,41 @@ client.on("interactionCreate", async (interaction) => {
     try {
       channelID = interaction.channel.id;
     } catch (error) {
-      return interaction.reply("チャンネル取得に失敗しました");
+      return interaction.reply({
+        content: "チャンネル取得に失敗しました",
+        ephemeral: true,
+      });
     }
     let data;
     try {
       data = fs.readFileSync("channelDB.json", "utf8");
     } catch (error) {
-      return interaction.reply("チャンネルDBの読み込みに失敗しました");
+      return interaction.reply({
+        content: "チャンネルDBの読み込みに失敗しました",
+        ephemeral: true,
+      });
     }
     if (!data) {
-      return interaction.reply("設定されていないチャンネルです。");
+      return interaction.reply({
+        content: "設定されていないチャンネルです。",
+        ephemearl: true,
+      });
     }
     let jsonData = JSON.parse(data);
     if (!jsonData.includes(channelID)) {
-      return interaction.reply("設定されていないチャンネルです。");
+      return interaction.reply({
+        content: "設定されていないチャンネルです。",
+        ephemeral: true,
+      });
     }
     jsonData = jsonData.filter((id) => id !== channelID);
     try {
       fs.writeFileSync("channelDB.json", JSON.stringify(jsonData));
     } catch (error) {
-      interaction.reply("チャンネルDBの書き込みに失敗しました");
+      interaction.reply({
+        content: "チャンネルDBの書き込みに失敗しました",
+        ephemeral: true,
+      });
       console.log(`command-setchannel: 書き込み失敗${error}`);
       return;
     }
