@@ -197,7 +197,10 @@ client.on("interactionCreate", async (interaction) => {
   }
   if (interaction.commandName === "deletechannel") {
     if (!interaction.member.permissions.has("Administrator")) {
-      return interaction.reply("管理者以外実行できません");
+      return interaction.reply({
+        content: "管理者以外実行できません",
+        ephemeral: true,
+      });
     }
     let channelID = "";
     try {
