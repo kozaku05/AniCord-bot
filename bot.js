@@ -4,11 +4,10 @@ const {
   ActivityType,
   EmbedBuilder,
 } = require("discord.js");
-const dotenv = require("dotenv");
+require("dotenv").config();
 const fs = require("fs");
 const get = require("./api-get");
 const schedule = require("node-schedule");
-dotenv.config();
 
 const client = new Client({
   intents: [
